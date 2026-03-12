@@ -1,0 +1,35 @@
+name: C Build Test
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y build-essential cmake
+
+    - name: Configure CMake
+      run: cmake -B build
+
+    - name: Build project
+      run: cmake --build build
+
+    - name: Run Basic Tests
+      run: |
+        # This checks if the library was actually created
+        if [ -f ./build/libLogs.a ]; then
+          echo "Build successful!"
+        else
+          echo "Library not found!"
+          exit 1
+        fi
+
