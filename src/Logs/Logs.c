@@ -134,6 +134,12 @@ static Logger* init(const char* filename)
  */
 static Logger* set_level(severity_level level)
 {
+    if (level >= warn)
+    {
+        fprintf(stderr, "set_level: %slevel must be trace, debug, or info%s.", RED, RESET);
+        exit(1);
+    }
+
     pthread_mutex_lock(&State.lock);
     State.level = level;
     pthread_mutex_unlock(&State.lock);
