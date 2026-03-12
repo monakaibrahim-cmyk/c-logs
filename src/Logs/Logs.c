@@ -75,7 +75,7 @@ static const char* _cstr[] =
  */
 static void _create_dirs(const char* path)
 {
-    for (char* p = strchr(path, '/'); p; p = strchr(p + 1, '/'))
+    for (char* p = strchr((char*)path, '/'); p; p = strchr(p + 1, '/'))
     {
         *p = '\0';
         mkdir(path, 0755);
@@ -103,7 +103,8 @@ static Logger* init(const char* filename)
 
     if (filename)
     {
-        char path[256];
+        char path[4096];
+
         strncpy(path, filename, sizeof(path) - 1);
         path[sizeof(path) - 1] = '\0';
 
