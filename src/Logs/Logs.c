@@ -64,20 +64,55 @@ static const char* _cstr[] =
 };
 
 /**
+ * @brief Creates all directories in a given path.
+ *
+ * Iterates through each '/' in the path and creates the directory.
+ * Supports creating nested directories like Logs/Logs/Logs.
+ *
+ * @param[in] path The directory path to create.
+ */
+static void _create_dirs(const char* path)
+{
+    for (char* p = strchr(path, '/'); p; p = strchr(p + 1, '/'))
+    {
+        *p = '\0';
+        mkdir(path, 0755);
+        *p = '/';
+    }
+
+    mkdir(path, 0755);
+}
+
+/**
  * @brief Initializes the logging system with an optional log file.
  *
  * This function opens a file for logging in append mode. If a filename is provided,
  * log messages will be written to both stdout and the specified file.
+ * Creates the directory and any parent directories if they do not exist.
  * Thread-safe operation using mutex locking.
  *
- * @param[in] filename Path to the log file. If NULL, only stdout logging is used.
+ * @param[in] filename Path to the log file. Can be relative (Logs/log.log) or absolute (/var/log/app.log).
+ *                      If NULL, only stdout logging is used.
  * @return Pointer to the global Logger instance for method chaining.
  */
 static Logger* init(const char* filename)
 {
     pthread_mutex_lock(&State.lock);
+
     if (filename)
     {
+        char path[256];
+        strncpy(path, filename, sizeof(path) - 1);
+        path[sizeof(path) - 1] = '\0';
+
+        char* slash = strrchr(path, '/');
+        
+        if (slash && slash != path)
+        {
+            *slash = '\0';
+            _create_dirs(path);
+        }
+
         State.file = fopen(filename, "a");
     }
 
@@ -88,15 +123,17 @@ static Logger* init(const char* filename)
 /**
  * @brief Sets the minimum severity level for logging.
  *
- * Only log messages with a severity level >= the specified level will be logged.
- * The default level is debug.
+ * Only log messages with info, trace, and debug based on the specified level.
+ * The default level is debug. Thread-safe using mutex locking.
  *
- * @param[in] level The minimum severity level to log (trace, debug, info, warn, error, fatal).
+ * @param[in] level The severity level to log (trace, debug, info).
  * @return Pointer to the global Logger instance for method chaining.
  */
 static Logger* set_level(severity_level level)
 {
+    pthread_mutex_lock(&State.lock);
     State.level = level;
+    pthread_mutex_unlock(&State.lock);
     return &Logs;
 }
 
@@ -104,14 +141,16 @@ static Logger* set_level(severity_level level)
  * @brief Enables or disables colored output in the terminal.
  *
  * When enabled, log messages are printed with ANSI color codes for better
- * readability. Colors are mapped to severity levels.
+ * readability. Colors are mapped to severity levels. Thread-safe using mutex locking.
  *
  * @param[in] enable Non-zero to enable colors, zero to disable.
  * @return Pointer to the global Logger instance for method chaining.
  */
 static Logger* set_color(int enable)
 {
+    pthread_mutex_lock(&State.lock);
     State.enabled = enable;
+    pthread_mutex_unlock(&State.lock);
     return &Logs;
 }
 
@@ -171,7 +210,7 @@ static void _indent_worker(FILE* out, int padding, const char* text, int width)
  */
 static void _indent_file(FILE* out, int padding, const char* text)
 {
-    _indent_worker(out, 4, text, 80);
+    _indent_worker(out, padding, text, 80);
 }
 
 /**
@@ -185,7 +224,7 @@ static void _indent_file(FILE* out, int padding, const char* text)
  */
 static void _indent_stdout(int padding, const char* text)
 {
-    _indent_worker(stdout, 4, text, 80);
+    _indent_worker(stdout, padding, text, 80);
 }
 
 /**
@@ -224,8 +263,10 @@ static void _indent_stack_trace(FILE* out, int padding)
  * function name, and the formatted message. Thread-safe using mutex locking.
  * Logs to both stdout and file (if configured).
  *
- * Only logs messages with severity >= the level set via set_level().
- * Messages below the configured level are silently ignored.
+ * Only logs info, trace, and debug messages based on State.level:
+ *   - info: logs only info
+ *   - trace: logs trace, debug, and info
+ *   - debug: logs debug and info
  *
  * @param[in] level Severity level of the message (trace, debug, info, warn, error, fatal).
  * @param[in] filename Source file where the log call originated (usually __FILE__).
@@ -238,7 +279,7 @@ static void writec(severity_level level, const char* filename, int line, const c
 {
     pthread_mutex_lock(&State.lock);
 
-    if (level < State.level)
+    if (level < State.level || level > info)
     {
         pthread_mutex_unlock(&State.lock);
         return;
