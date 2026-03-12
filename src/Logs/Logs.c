@@ -71,7 +71,7 @@ static const char* _cstr[] =
  * Iterates through each '/' in the path and creates the directory.
  * Supports creating nested directories like Logs/Logs/Logs.
  *
- * @param[in] path The directory path to create.
+ * @param path The directory path to create.
  */
 static void _create_dirs(const char* path)
 {
@@ -93,8 +93,8 @@ static void _create_dirs(const char* path)
  * Creates the directory and any parent directories if they do not exist.
  * Thread-safe operation using mutex locking.
  *
- * @param[in] filename Path to the log file. Can be relative (Logs/log.log) or absolute (/var/log/app.log).
- *                      If NULL, only stdout logging is used.
+ * @param filename Path to the log file. Can be relative (Logs/log.log) or absolute (/var/log/app.log).
+ *                 If NULL, only stdout logging is used.
  * @return Pointer to the global Logger instance for method chaining.
  */
 static Logger* init(const char* filename)
@@ -129,7 +129,7 @@ static Logger* init(const char* filename)
  * Only log messages with info, trace, and debug based on the specified level.
  * The default level is debug. Thread-safe using mutex locking.
  *
- * @param[in] level The severity level to log (trace, debug, info).
+ * @param level The severity level to log (trace, debug, info).
  * @return Pointer to the global Logger instance for method chaining.
  */
 static Logger* set_level(severity_level level)
@@ -137,7 +137,7 @@ static Logger* set_level(severity_level level)
     if (level >= warn)
     {
         fprintf(stderr, "set_level: %slevel must be trace, debug, or info%s.", RED, RESET);
-        exit(1);
+        return NULL;
     }
 
     pthread_mutex_lock(&State.lock);
@@ -152,7 +152,7 @@ static Logger* set_level(severity_level level)
  * When enabled, log messages are printed with ANSI color codes for better
  * readability. Colors are mapped to severity levels. Thread-safe using mutex locking.
  *
- * @param[in] enable Non-zero to enable colors, zero to disable.
+ * @param enable Non-zero to enable colors, zero to disable.
  * @return Pointer to the global Logger instance for method chaining.
  */
 static Logger* set_color(int enable)
@@ -169,10 +169,10 @@ static Logger* set_color(int enable)
  * Writes text to the specified output stream with padding at the beginning of each line.
  * Implements word wrapping at the specified width boundary.
  *
- * @param[in,out] out File pointer to write the indented text to.
- * @param[in] padding Number of spaces to indent each line.
- * @param[in] text The text string to indent and wrap.
- * @param[in] width The column width at which to wrap long lines.
+ * @param out File pointer to write the indented text to.
+ * @param padding Number of spaces to indent each line.
+ * @param text The text string to indent and wrap.
+ * @param width The column width at which to wrap long lines.
  */
 static void _indent_worker(FILE* out, int padding, const char* text, int width)
 {
@@ -213,9 +213,9 @@ static void _indent_worker(FILE* out, int padding, const char* text, int width)
  * Wrapper around _indent_worker with fixed parameters for file output
  * (4-space indent, 80-character wrap width).
  *
- * @param[in,out] out File pointer to write the indented text to.
- * @param[in] padding Number of spaces to indent each line.
- * @param[in] text The text string to indent and wrap.
+ * @param out File pointer to write the indented text to.
+ * @param padding Number of spaces to indent each line.
+ * @param text The text string to indent and wrap.
  */
 static void _indent_file(FILE* out, int padding, const char* text)
 {
@@ -228,8 +228,8 @@ static void _indent_file(FILE* out, int padding, const char* text)
  * Wrapper around _indent_worker with fixed parameters for stdout
  * (4-space indent, 80-character wrap width).
  *
- * @param[in] padding Number of spaces to indent each line.
- * @param[in] text The text string to indent and wrap.
+ * @param padding Number of spaces to indent each line.
+ * @param text The text string to indent and wrap.
  */
 static void _indent_stdout(int padding, const char* text)
 {
@@ -243,8 +243,8 @@ static void _indent_stdout(int padding, const char* text)
  * with the specified indentation. Used for error and fatal log messages
  * to help with debugging.
  *
- * @param[in,out] out File pointer to write the stack trace to.
- * @param[in] padding Number of spaces to indent each line of the stack trace.
+ * @param out File pointer to write the stack trace to.
+ * @param padding Number of spaces to indent each line of the stack trace.
  */
 static void _indent_stack_trace(FILE* out, int padding)
 {
@@ -277,12 +277,12 @@ static void _indent_stack_trace(FILE* out, int padding)
  *   - trace: logs trace, debug, and info
  *   - debug: logs debug and info
  *
- * @param[in] level Severity level of the message (trace, debug, info, warn, error, fatal).
- * @param[in] filename Source file where the log call originated (usually __FILE__).
- * @param[in] line Line number in the source file (usually __LINE__).
- * @param[in] function Name of the function containing the log call (usually __FUNCTION__).
- * @param[in] fmt Printf-style format string for the message.
- * @param[in] ... Additional arguments for the format string.
+ * @param level Severity level of the message (trace, debug, info, warn, error, fatal).
+ * @param filename Source file where the log call originated (usually __FILE__).
+ * @param line Line number in the source file (usually __LINE__).
+ * @param function Name of the function containing the log call (usually __FUNCTION__).
+ * @param fmt Printf-style format string for the message.
+ * @param ... Additional arguments for the format string.
  */
 static void writec(severity_level level, const char* filename, int line, const char* function, const char* fmt, ...)
 {
@@ -383,12 +383,12 @@ static void writec(severity_level level, const char* filename, int line, const c
  * Only accepts warn, error, or fatal severity levels. Messages with
  * trace, debug, or info levels are silently ignored.
  *
- * @param[in] level Severity level of the message (warn, error, or fatal).
- * @param[in] filename Source file where the log call originated (usually __FILE__).
- * @param[in] line Line number in the source file (usually __LINE__).
- * @param[in] function Name of the function containing the log call (usually __FUNCTION__).
- * @param[in] fmt Printf-style format string for the message.
- * @param[in] ... Additional arguments for the format string.
+ * @param level Severity level of the message (warn, error, or fatal).
+ * @param filename Source file where the log call originated (usually __FILE__).
+ * @param line Line number in the source file (usually __LINE__).
+ * @param function Name of the function containing the log call (usually __FUNCTION__).
+ * @param fmt Printf-style format string for the message.
+ * @param ... Additional arguments for the format string.
  */
 static void write_errors(severity_level level, const char* filename, int line, const char* function, const char* fmt, ...)
 {
