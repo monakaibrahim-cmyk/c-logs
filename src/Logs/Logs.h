@@ -7,6 +7,9 @@
  *
  * Provides a thread-safe logging facility with severity levels, colored output,
  * and optional file logging. Use the LOG_* macros for convenient logging.
+ *
+ * @author C-Logs
+ * @version 1.0
  */
 
 /**
@@ -71,6 +74,8 @@ typedef struct Logger Logger;
  * This struct provides a fluent API for configuring and using the logger.
  * Use method chaining to configure multiple options in sequence.
  *
+ * @note The logger must be initialized with Logs.init() before use.
+ *
  * Example:
  * @code
  * Logs.init("app.log")
@@ -82,21 +87,34 @@ struct Logger
 {
     /**
      * @brief Initializes the logger with an optional log file.
-     * @param[in] filename Path to log file, or NULL for stdout only.
+     *
+     * Opens a file for logging in append mode. If a filename is provided,
+     * log messages will be written to both stdout and the specified file.
+     * Creates the directory and any parent directories if they do not exist.
+     *
+     * @param filename Path to log file, or NULL for stdout only.
      * @return Pointer to Logger for method chaining.
      */
     Logger* (*init)(const char* filename);
 
     /**
      * @brief Sets the minimum severity level to log.
-     * @param[in] level The minimum severity level.
+     *
+     * Only log messages with severity >= the specified level will be logged.
+     * The default level is debug.
+     *
+     * @param level The minimum severity level (trace, debug, or info).
      * @return Pointer to Logger for method chaining.
      */
     Logger* (*set_level)(severity_level level);
 
     /**
      * @brief Enables or disables colored terminal output.
-     * @param[in] enable Non-zero to enable, zero to disable.
+     *
+     * When enabled, log messages are printed with ANSI color codes
+     * that correspond to the severity level.
+     *
+     * @param enable Non-zero to enable colors, zero to disable.
      * @return Pointer to Logger for method chaining.
      */
     Logger* (*set_color)(int enable);
@@ -107,12 +125,12 @@ struct Logger
      * Only logs messages with severity >= the level set via set_level().
      * Messages below the configured level are silently ignored.
      *
-     * @param[in] level Severity level of the message.
-     * @param[in] filename Source file name.
-     * @param[in] line Source line number.
-     * @param[in] function Function name.
-     * @param[in] fmt Format string.
-     * @param[in] ... Arguments for the format string.
+     * @param level Severity level of the message.
+     * @param filename Source file name (usually __FILE__).
+     * @param line Source line number (usually __LINE__).
+     * @param function Function name (usually __FUNCTION__).
+     * @param fmt Format string.
+     * @param ... Arguments for the format string.
      */
     void (*write)(severity_level level, const char* filename, int line, const char* function, const char* fmt, ...);
 
@@ -122,12 +140,12 @@ struct Logger
      * Only accepts warn, error, or fatal severity levels. Messages with
      * trace, debug, or info levels are silently ignored.
      *
-     * @param[in] level Severity level (warn, error, or fatal).
-     * @param[in] filename Source file name.
-     * @param[in] line Source line number.
-     * @param[in] function Function name.
-     * @param[in] fmt Format string.
-     * @param[in] ... Arguments for the format string.
+     * @param level Severity level (warn, error, or fatal).
+     * @param filename Source file name (usually __FILE__).
+     * @param line Source line number (usually __LINE__).
+     * @param function Function name (usually __FUNCTION__).
+     * @param fmt Format string.
+     * @param ... Arguments for the format string.
      */
     void (*write_errors)(severity_level level, const char* filename, int line, const char* function, const char* fmt, ...);
 };
@@ -138,7 +156,7 @@ struct Logger
  * Use this global instance to access logger functionality. The logger
  * must be initialized with Logs.init() before use.
  *
- * Example:
+ * @note Example usage:
  * @code
  * Logs.init("app.log")->set_level(info)->set_color(1);
  * LOG_INFO("Application started");
